@@ -1,0 +1,12 @@
+{
+  "telemetry/DEFAULT_TENANT": {
+    "hono-client": [
+      "WRITE"
+    ]
+  },
+  "registration/DEFAULT_TENANT": {
+    "hono-client": [
+      "READ","WRITE"
+    ]
+  }
+}

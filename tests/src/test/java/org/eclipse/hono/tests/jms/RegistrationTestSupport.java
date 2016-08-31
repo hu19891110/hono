@@ -14,9 +14,6 @@
 package org.eclipse.hono.tests.jms;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.eclipse.hono.registration.RegistrationConstants.APP_PROPERTY_ACTION;
-import static org.eclipse.hono.registration.RegistrationConstants.APP_PROPERTY_STATUS;
-import static org.eclipse.hono.util.MessageHelper.APP_PROPERTY_DEVICE_ID;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -135,14 +132,14 @@ public class RegistrationTestSupport {
         try {
             final String correlationId = UUID.randomUUID().toString();
             final BytesMessage message = session.createBytesMessage();
-            message.setStringProperty(APP_PROPERTY_DEVICE_ID, deviceId);
-            message.setStringProperty(APP_PROPERTY_ACTION, action);
+            message.setStringProperty("device_id", deviceId);
+            message.setStringProperty("action", action);
             message.setJMSReplyTo(reply);
             message.setJMSCorrelationID(correlationId);
 
             LOGGER.debug("adding response handler for request [correlation ID: {}]", correlationId);
             CompletableFuture<Long> result = c.add(correlationId, response -> {
-                final String status = getStringProperty(response, APP_PROPERTY_STATUS);
+                final String status = getStringProperty(response, "status");
                 LOGGER.debug("received response [status: {}] for request [correlation ID: {}]", status, correlationId);
                 final long httpStatus = toLong(status, 0);
                 if (status == null || status.isEmpty() || httpStatus <= 0) {

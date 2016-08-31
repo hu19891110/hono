@@ -47,7 +47,7 @@ public class DeviceRegistrationIT {
 
     @Before
     public void init() throws Exception {
-        client = JmsIntegrationTestSupport.newClient("hono");
+        client = JmsIntegrationTestSupport.newClient("hono", "sender", "secret");
         registration = client.getRegistrationTestSupport();
         registration.createConsumer();
         registration.createProducer();

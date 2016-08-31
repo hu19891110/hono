@@ -42,11 +42,6 @@ Test cases are run against Docker images of Hono server + (Apache Qpid Dispatch 
          <scope>test</scope>
       </dependency>
      <dependency>
-        <groupId>org.eclipse.hono</groupId>
-        <artifactId>hono-server</artifactId>
-        <scope>test</scope>
-     </dependency>
-     <dependency>
        <groupId>io.vertx</groupId>
        <artifactId>vertx-core</artifactId>
        <scope>test</scope>
@@ -68,6 +63,11 @@ Test cases are run against Docker images of Hono server + (Apache Qpid Dispatch 
       <dependency>
          <groupId>org.apache.qpid</groupId>
          <artifactId>qpid-jms-client</artifactId>
+      </dependency>
+      <dependency>
+      	<groupId>org.eclipse.hono</groupId>
+      	<artifactId>hono-server</artifactId>
+      	<scope>test</scope>
       </dependency>
    </dependencies>
 

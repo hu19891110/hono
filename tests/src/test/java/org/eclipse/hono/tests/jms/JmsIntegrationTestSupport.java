@@ -17,7 +17,6 @@ import static org.eclipse.hono.tests.IntegrationTestSupport.PROPERTY_DOWNSTREAM_
 import static org.eclipse.hono.tests.IntegrationTestSupport.PROPERTY_DOWNSTREAM_PORT;
 import static org.eclipse.hono.tests.IntegrationTestSupport.PROPERTY_HONO_HOST;
 import static org.eclipse.hono.tests.IntegrationTestSupport.PROPERTY_HONO_PORT;
-import static org.eclipse.hono.util.MessageHelper.APP_PROPERTY_DEVICE_ID;
 
 import java.util.Hashtable;
 import java.util.Objects;
@@ -96,8 +95,8 @@ public class JmsIntegrationTestSupport {
         return result;
     }
 
-    JmsIntegrationTestSupport createSession(final String name, final String clientId) throws NamingException, JMSException {
-        final ConnectionFactory cf = (ConnectionFactory) ctx.lookup(name);
+    JmsIntegrationTestSupport createSession(final String server, final String clientId) throws NamingException, JMSException {
+        final ConnectionFactory cf = (ConnectionFactory) ctx.lookup(server);
         connection = cf.createConnection();
         connection.setExceptionListener(new MyExceptionListener());
         connection.setClientID(clientId);
@@ -178,7 +177,7 @@ public class JmsIntegrationTestSupport {
 
     Message newTextMessage(final String body, final String deviceId) throws JMSException {
         final BytesMessage message = session.createBytesMessage();
-        message.setStringProperty(APP_PROPERTY_DEVICE_ID, deviceId);
+        message.setStringProperty("device_id", deviceId);
         message.writeUTF(body);
         return message;
     }

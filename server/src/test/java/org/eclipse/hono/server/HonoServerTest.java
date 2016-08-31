@@ -17,10 +17,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
+import java.security.Principal;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.proton.amqp.transport.Target;
+import org.apache.qpid.proton.engine.Record;
 import org.eclipse.hono.authorization.AuthorizationConstants;
 import org.eclipse.hono.authorization.Permission;
 import org.eclipse.hono.telemetry.TelemetryConstants;
@@ -82,7 +84,7 @@ public class HonoServerTest {
         final Target target = getTarget(targetAddress);
         final ProtonReceiver receiver = mock(ProtonReceiver.class);
         when(receiver.getRemoteTarget()).thenReturn(target);
-        server.handleReceiverOpen(mock(ProtonConnection.class), receiver);
+        server.handleReceiverOpen(newAuthenticatedConnection("SUBJECT"), receiver);
 
         // THEN the server delegates link establishment to the telemetry endpoint 
         assertTrue(linkEstablished.await(1, TimeUnit.SECONDS));
@@ -114,15 +116,29 @@ public class HonoServerTest {
             linkClosed.countDown();
             return receiver;
         });
-        server.handleReceiverOpen(mock(ProtonConnection.class), receiver);
+        server.handleReceiverOpen(newAuthenticatedConnection("SUBJECT"), receiver);
 
         // THEN the server closes the link with the client
         assertTrue(linkClosed.await(1, TimeUnit.SECONDS));
     }
 
-    private Target getTarget(final String targetAddress) {
+    private static Target getTarget(final String targetAddress) {
         Target result = mock(Target.class);
         when(result.getAddress()).thenReturn(targetAddress);
         return result;
+    }
+
+    private static ProtonConnection newAuthenticatedConnection(final String name) {
+        final Record attachments = mock(Record.class);
+        when(attachments.get(Constants.KEY_CLIENT_PRINCIPAL, Principal.class)).thenReturn(new Principal() {
+
+            @Override
+            public String getName() {
+                return name;
+            }
+        });
+        final ProtonConnection con = mock(ProtonConnection.class);
+        when(con.attachments()).thenReturn(attachments);
+        return con;
     }
 }

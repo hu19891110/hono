@@ -12,6 +12,7 @@
 package org.eclipse.hono.client;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.apache.qpid.proton.message.Message;
@@ -35,7 +36,6 @@ import io.vertx.proton.ProtonConnection;
 public class HonoClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(HonoClient.class);
-    private static final String LOCAL_CONTAINER_NAME = "hono-client";
     private final Vertx vertx;
     private final String host;
     private final int port;
@@ -72,7 +72,7 @@ public class HonoClient {
                     LOG.info("connected to server [{}:{}]", host, port);
                     conAttempt.result()
                         .setHostname("hono")
-                        .setContainer(LOCAL_CONTAINER_NAME)
+                        .setContainer("Hono-Client-" + UUID.randomUUID().toString())
                         .openHandler(opened -> {
                             if (opened.succeeded()) {
                                 LOG.info("connection to [{}] open", opened.result().getRemoteContainer());
@@ -88,6 +88,7 @@ public class HonoClient {
                     connectionHandler.handle(Future.failedFuture(conAttempt.cause()));
                 }
             });
+
         }
         return this;
     }

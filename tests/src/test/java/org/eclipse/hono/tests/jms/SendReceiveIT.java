@@ -15,7 +15,6 @@ package org.eclipse.hono.tests.jms;
 import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.TELEMETRY_SENDER_ADDRESS;
 import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.TELEMETRY_RECEIVER_ADDRESS;
 import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.PATH_SEPARATOR;
-import static org.eclipse.hono.util.MessageHelper.APP_PROPERTY_DEVICE_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -43,6 +42,10 @@ import org.slf4j.LoggerFactory;
  */
 public class SendReceiveIT {
 
+    public static final String SPECIAL_DEVICE = "fluxcapacitor";
+    public static final JmsQueue SPECIAL_DEVICE_SENDER_DEST = new JmsQueue(TELEMETRY_SENDER_ADDRESS + "/" + SPECIAL_DEVICE);
+    public static final JmsQueue SPECIAL_DEVICE_RECV_DEST = new JmsQueue(TELEMETRY_RECEIVER_ADDRESS + PATH_SEPARATOR + SPECIAL_DEVICE);
+
     private static final Logger LOG = LoggerFactory.getLogger(SendReceiveIT.class);
 
     /* test constants */
@@ -53,9 +56,6 @@ public class SendReceiveIT {
     private JmsIntegrationTestSupport sender;
     private RegistrationTestSupport registration;
     private JmsIntegrationTestSupport connector;
-    public static final String SPECIAL_DEVICE = "fluxcapacitor";
-    public static final JmsQueue SPECIAL_DEVICE_SENDER_DEST = new JmsQueue(TELEMETRY_SENDER_ADDRESS + "/" + SPECIAL_DEVICE);
-    public static final JmsQueue SPECIAL_DEVICE_RECV_DEST = new JmsQueue(TELEMETRY_RECEIVER_ADDRESS + PATH_SEPARATOR + SPECIAL_DEVICE);
 
     @Before
     public void init() throws Exception {
@@ -145,7 +145,7 @@ public class SendReceiveIT {
 
     public String getDeviceId(final Message message) {
         try {
-            return message.getStringProperty(APP_PROPERTY_DEVICE_ID);
+            return message.getStringProperty("device_id");
         } catch (final JMSException e) {
             return null;
         }

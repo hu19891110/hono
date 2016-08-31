@@ -30,8 +30,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -50,13 +48,14 @@ import io.vertx.proton.ProtonClientOptions;
 @RunWith(VertxUnitRunner.class)
 public class StandaloneRegistrationApiTest {
 
-    private static final String KEY_CONTEXT = "Context";
-    static final Logger LOG = LoggerFactory.getLogger(StandaloneRegistrationApiTest.class);
-    private static final String BIND_ADDRESS = InetAddress.getLoopbackAddress().getHostAddress();
-    private static final int    NO_OF_DEVICES = 20;
-    private static final int    TIMEOUT = 5000; // milliseconds
-    private static final String DEVICE = "device";
-    private static final String DEVICE_1 = DEVICE + "1";
+    private static final String                KEY_CONTEXT = "Context";
+    private static final String                BIND_ADDRESS = InetAddress.getLoopbackAddress().getHostAddress();
+    private static final int                   NO_OF_DEVICES = 20;
+    private static final int                   TIMEOUT = 5000; // milliseconds
+    private static final String                DEVICE_PREFIX = "device";
+    private static final String                DEVICE_1 = DEVICE_PREFIX + "1";
+    private static final String                USER = "hono-client";
+    private static final String                PWD = "secret";
 
     private static Vertx                       vertx = Vertx.vertx();
     private static HonoServer                  server;
@@ -74,7 +73,8 @@ public class StandaloneRegistrationApiTest {
         server = new HonoServer(BIND_ADDRESS, 0, false);
         server.addEndpoint(new RegistrationEndpoint(vertx, false));
         registrationAdapter = new InMemoryRegistrationAdapter();
-        ctx.put(KEY_CONTEXT, vertx.getOrCreateContext());
+        Context context = vertx.getOrCreateContext();
+        ctx.put(KEY_CONTEXT, context);
 
         Future<RegistrationClient> setupTracker = Future.future();
         setupTracker.setHandler(ctx.asyncAssertSuccess(r -> {
@@ -84,7 +84,7 @@ public class StandaloneRegistrationApiTest {
         Future<String> registrationTracker = Future.future();
         Future<String> authTracker = Future.future();
 
-        getContext(ctx).runOnContext(run -> {
+        context.runOnContext(run -> {
             vertx.deployVerticle(registrationAdapter, registrationTracker.completer());
             vertx.deployVerticle(InMemoryAuthorizationService.class.getName(), authTracker.completer());
 
@@ -94,16 +94,23 @@ public class StandaloneRegistrationApiTest {
                 vertx.deployVerticle(server, serverTracker.completer());
                 return serverTracker;
             }).compose(s -> {
-                client = HonoClientBuilder.newClient().vertx(vertx).host(server.getBindAddress()).port(server.getPort()).build();
-
+                client = HonoClientBuilder.newClient()
+                        .vertx(vertx)
+                        .host(server.getBindAddress())
+                        .port(server.getPort())
+                        .user(USER)
+                        .password(PWD)
+                        .build();
+    
                 Future<HonoClient> clientTracker = Future.future();
-                client.connect(new ProtonClientOptions(), clientTracker.completer());
+                context.runOnContext(go -> {
+                    client.connect(new ProtonClientOptions(), clientTracker.completer());
+                });
                 return clientTracker;
             }).compose(c -> {
                 c.createRegistrationClient(DEFAULT_TENANT, setupTracker.completer());
             }, setupTracker);
         });
-
     }
 
     @After
@@ -121,7 +128,11 @@ public class StandaloneRegistrationApiTest {
         if (client != null) {
             getContext(ctx).runOnContext(go -> {
                 Future<Void> closeTracker = Future.future();
-                registrationClient.close(closeTracker.completer());
+                if (registrationClient != null) {
+                    registrationClient.close(closeTracker.completer());
+                } else {
+                    closeTracker.complete();
+                }
                 closeTracker.compose(c -> {
                     client.shutdown(done.completer());
                 }, done);
@@ -211,7 +222,7 @@ public class StandaloneRegistrationApiTest {
 
         //register devices
         IntStream.range(0, NO_OF_DEVICES).forEach(i -> {
-            String deviceId = DEVICE + i;
+            String deviceId = DEVICE_PREFIX + i;
             getContext(ctx).runOnContext(go -> {
                 registrationClient.register(deviceId, s -> {
                     resultAggregator.handle(s.succeeded() && HTTP_OK == s.result());
@@ -227,7 +238,7 @@ public class StandaloneRegistrationApiTest {
 
         //deregister devices
         IntStream.range(0, NO_OF_DEVICES).forEach(i -> {
-            String deviceId = DEVICE + i;
+            String deviceId = DEVICE_PREFIX + i;
             getContext(ctx).runOnContext(go -> {
                 registrationClient.deregister(deviceId, s -> {
                     resultAggregator.handle(s.succeeded() && HTTP_OK == s.result());

@@ -91,7 +91,6 @@ public class TelemetryClientIT {
             }
         });
 
-
         context.runOnContext(go -> {
 
             downstreamClient = HonoClientBuilder.newClient()
@@ -102,7 +101,7 @@ public class TelemetryClientIT {
                     .user("user1@HONO")
                     .password("pw")
                     .build();
-            downstreamClient.connect(createOptions(), downstreamTracker.completer());
+            downstreamClient.connect(new ProtonClientOptions(), downstreamTracker.completer());
 
             // step 1
             // connect to Hono server
@@ -124,12 +123,6 @@ public class TelemetryClientIT {
         });
 
         done.await(5000);
-    }
-
-    private static ProtonClientOptions createOptions() {
-        ProtonClientOptions options = new ProtonClientOptions();
-        options.setReconnectAttempts(3).setReconnectInterval(500);
-        return options;
     }
 
     private static Context getContext(final TestContext ctx) {

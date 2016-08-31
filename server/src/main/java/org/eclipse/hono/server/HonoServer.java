@@ -15,6 +15,7 @@ import static io.vertx.proton.ProtonHelper.condition;
 import static org.apache.qpid.proton.amqp.transport.AmqpError.UNAUTHORIZED_ACCESS;
 import static org.eclipse.hono.authorization.AuthorizationConstants.EVENT_BUS_ADDRESS_AUTHORIZATION_IN;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,7 @@ public final class HonoServer extends AbstractVerticle {
         } else {
             final ProtonServerOptions options = createServerOptions();
             server = ProtonServer.create(vertx, options)
+                    .saslAuthenticatorFactory(new HonoSaslAuthenticatorFactory(vertx))
                     .connectHandler(this::helloProcessConnection)
                     .listen(port, bindAddress, bindAttempt -> {
                         if (bindAttempt.succeeded()) {
@@ -197,7 +199,7 @@ public final class HonoServer extends AbstractVerticle {
         connection.disconnectHandler(HonoServer::handleDisconnected);
         connection.closeHandler(HonoServer::handleConnectionClosed);
         connection.openHandler(result -> {
-            LOG.debug("Client [{}:{}] connected", connection.getRemoteHostname(), connection.getRemoteContainer());
+            LOG.debug("client [{}:{}] connected", connection.getRemoteHostname(), connection.getRemoteContainer());
             result.result().open();
         });
     }
@@ -262,17 +264,18 @@ public final class HonoServer extends AbstractVerticle {
     }
 
     /**
-     * Note: This is only temporary solution, we treat the container name as the user because we do not yet authenticate clients.
-     *
+     * Gets the authenticated client principal name for an AMQP connection.
+     * 
      * @param con the connection to read the user from
      * @return the user associated with the connection or {@link Constants#DEFAULT_SUBJECT} if it cannot be determined.
      */
     private String getUserFromConnection(final ProtonConnection con) {
 
-        if (con.getRemoteContainer() == null) {
+        Principal clientId = Constants.getClientPrincipal(con);
+        if (clientId == null) {
             return Constants.DEFAULT_SUBJECT;
         } else {
-            return con.getRemoteContainer();
+            return clientId.getName();
         }
     }
 
