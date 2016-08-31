@@ -12,9 +12,7 @@
  */
 package org.eclipse.hono.tests.jms;
 
-import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.TELEMETRY_SENDER_ADDRESS;
-import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.TELEMETRY_RECEIVER_ADDRESS;
-import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.PATH_SEPARATOR;
+import static org.eclipse.hono.tests.jms.JmsIntegrationTestSupport.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,8 +58,8 @@ public class SendReceiveIT {
     @Before
     public void init() throws Exception {
 
-        sender = JmsIntegrationTestSupport.newClient("hono");
-        connector = JmsIntegrationTestSupport.newClient("hono", "connector-client");
+        sender = JmsIntegrationTestSupport.newClient("hono", HONO_USER, HONO_PASSWORD);
+        connector = JmsIntegrationTestSupport.newClient("hono", "connector-client", "connector-secret");
         receiver = JmsIntegrationTestSupport.newClient("qdr", "user1@HONO", "pw");
         registration = sender.getRegistrationTestSupport();
 

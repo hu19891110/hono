@@ -82,7 +82,7 @@ public final class HonoServer extends AbstractVerticle {
         } else {
             final ProtonServerOptions options = createServerOptions();
             server = ProtonServer.create(vertx, options)
-                    .saslAuthenticatorFactory(new HonoSaslAuthenticatorFactory(vertx))
+                    .saslAuthenticatorFactory(new PlainSaslAuthenticatorFactory(vertx))
                     .connectHandler(this::helloProcessConnection)
                     .listen(port, bindAddress, bindAttempt -> {
                         if (bindAttempt.succeeded()) {
@@ -199,7 +199,7 @@ public final class HonoServer extends AbstractVerticle {
         connection.disconnectHandler(HonoServer::handleDisconnected);
         connection.closeHandler(HonoServer::handleConnectionClosed);
         connection.openHandler(result -> {
-            LOG.debug("client [{}:{}] connected", connection.getRemoteHostname(), connection.getRemoteContainer());
+            LOG.debug("client [container: {}, user: {}] connected", connection.getRemoteContainer(), getUserFromConnection(connection));
             result.result().open();
         });
     }
@@ -216,7 +216,7 @@ public final class HonoServer extends AbstractVerticle {
     private static void handleConnectionClosed(AsyncResult<ProtonConnection> res) {
         if (res.succeeded()) {
             ProtonConnection con = res.result();
-            LOG.debug("client [{}:{}] closed connection", con.getRemoteHostname(), con.getRemoteContainer());
+            LOG.debug("client [{}] closed connection", con.getRemoteContainer());
             con.close();
         } else {
             LOG.warn("processing of close frame from client failed", res.cause());
@@ -224,7 +224,7 @@ public final class HonoServer extends AbstractVerticle {
     }
 
     private static void handleDisconnected(ProtonConnection connection) {
-        LOG.debug("client [{}:{}] disconnected", connection.getRemoteHostname(), connection.getRemoteContainer());
+        LOG.debug("client [{}] disconnected", connection.getRemoteContainer());
         connection.disconnect();
     }
 
@@ -235,7 +235,8 @@ public final class HonoServer extends AbstractVerticle {
      * @param receiver the receiver created for the link.
      */
     void handleReceiverOpen(final ProtonConnection con, final ProtonReceiver receiver) {
-        LOG.debug("client wants to open a link for sending messages [address: {}]", receiver.getRemoteTarget());
+        LOG.debug("client [{}] wants to open a link for sending messages [address: {}]",
+                con.getRemoteContainer(), receiver.getRemoteTarget());
         try {
             final ResourceIdentifier targetResource = getResourceIdentifier(receiver.getRemoteTarget().getAddress());
             final Endpoint endpoint = getEndpoint(targetResource);
@@ -251,8 +252,7 @@ public final class HonoServer extends AbstractVerticle {
                         receiver.setTarget(receiver.getRemoteTarget());
                         endpoint.onLinkAttach(receiver, targetResource);
                     } else {
-                        final String message = String.format("[%s] is not authorized to attach to [%s]", user, targetResource);
-                        LOG.debug(message);
+                        final String message = String.format("subject [%s] is not authorized to WRITE to [%s]", user, targetResource);
                         receiver.setCondition(condition(UNAUTHORIZED_ACCESS.toString(), message)).close();
                     }
                 });
@@ -273,6 +273,8 @@ public final class HonoServer extends AbstractVerticle {
 
         Principal clientId = Constants.getClientPrincipal(con);
         if (clientId == null) {
+            LOG.warn("connection from {} is not authenticated properly using SASL, falling back to default subject ({}",
+                    con.getRemoteContainer(), Constants.DEFAULT_SUBJECT);
             return Constants.DEFAULT_SUBJECT;
         } else {
             return clientId.getName();
@@ -287,7 +289,8 @@ public final class HonoServer extends AbstractVerticle {
      */
     void handleSenderOpen(final ProtonConnection con, final ProtonSender sender) {
         final Source remoteSource = sender.getRemoteSource();
-        LOG.debug("client wants to open a link for receiving messages [address: {}]", remoteSource);
+        LOG.debug("client [{}] wants to open a link for receiving messages [address: {}]",
+                con.getRemoteContainer(), remoteSource);
         try {
             final String source = remoteSource.getAddress();
             final ResourceIdentifier targetResource = getResourceIdentifier(source);
@@ -299,12 +302,10 @@ public final class HonoServer extends AbstractVerticle {
                 final String user = getUserFromConnection(con);
                 checkAuthorizationToAttach(user, targetResource, Permission.READ, isAuthorized -> {
                     if (isAuthorized) {
-                        LOG.debug("client is authorized to attach to [{}]", targetResource);
                         sender.setSource(sender.getRemoteSource());
                         endpoint.onLinkAttach(sender, targetResource);
                     } else {
-                        final String message = String.format("[%s] is not authorized to attach to [%s]", user, targetResource);
-                        LOG.debug(message);
+                        final String message = String.format("subject [%s] is not authorized to READ from [%s]", user, targetResource);
                         sender.setCondition(condition(UNAUTHORIZED_ACCESS.toString(), message)).close();
                     }
                 });

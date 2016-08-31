@@ -20,7 +20,7 @@ import io.vertx.proton.sasl.ProtonSaslAuthenticatorFactory;
 /**
  * A factory for objects performing SASL authentication on an AMQP connection.
  */
-public final class HonoSaslAuthenticatorFactory implements ProtonSaslAuthenticatorFactory {
+public final class PlainSaslAuthenticatorFactory implements ProtonSaslAuthenticatorFactory {
 
     private Vertx vertx;
 
@@ -29,12 +29,12 @@ public final class HonoSaslAuthenticatorFactory implements ProtonSaslAuthenticat
      * 
      * @param vertx the Vertx environment to run the factory in.
      */
-    public HonoSaslAuthenticatorFactory(final Vertx vertx) {
+    public PlainSaslAuthenticatorFactory(final Vertx vertx) {
         this.vertx = Objects.requireNonNull(vertx);
     }
 
     @Override
     public ProtonSaslAuthenticator create() {
-        return new HonoSaslAuthenticator(vertx);
+        return new PlainSaslAuthenticator(vertx);
     }
 }

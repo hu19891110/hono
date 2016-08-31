@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.util.stream.IntStream;
 
 import org.apache.qpid.proton.message.Message;
+import org.eclipse.hono.authentication.impl.AcceptAllPlainAuthenticationService;
 import org.eclipse.hono.authorization.impl.InMemoryAuthorizationService;
 import org.eclipse.hono.client.HonoClient;
 import org.eclipse.hono.client.HonoClient.HonoClientBuilder;
@@ -83,12 +84,14 @@ public class StandaloneTelemetryApiTest {
         setupTracker.setHandler(ctx.asyncAssertSuccess());
 
         Future<String> registrationTracker = Future.future();
+        Future<String> authenticationTracker = Future.future();
         Future<String> authTracker = Future.future();
         Future<String> telemetryTracker = Future.future();
 
         context.runOnContext(run -> {
             vertx.deployVerticle(registrationAdapter, registrationTracker.completer());
             vertx.deployVerticle(InMemoryAuthorizationService.class.getName(), authTracker.completer());
+            vertx.deployVerticle(AcceptAllPlainAuthenticationService.class.getName(), authenticationTracker.completer());
             vertx.deployVerticle(telemetryAdapter, telemetryTracker.completer());
 
             CompositeFuture.all(registrationTracker, authTracker, telemetryTracker)

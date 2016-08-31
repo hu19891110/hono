@@ -36,7 +36,6 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.apache.qpid.jms.JmsQueue;
-import org.eclipse.hono.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +47,11 @@ public class JmsIntegrationTestSupport {
 
     public static final String HONO_HOST = System.getProperty(PROPERTY_HONO_HOST, "localhost");
     public static final int    HONO_PORT = Integer.getInteger(PROPERTY_HONO_PORT, 5672);
+    public static final String HONO_USER = "hono-client";
+    public static final String HONO_PASSWORD = "secret";
     public static final String DOWNSTREAM_HOST = System.getProperty(PROPERTY_DOWNSTREAM_HOST, "localhost");
     public static final int    DOWNSTREAM_PORT = Integer.getInteger(PROPERTY_DOWNSTREAM_PORT, 15672);
-    public static final String TEST_TENANT_ID = Constants.DEFAULT_TENANT;
+    public static final String TEST_TENANT_ID = "DEFAULT_TENANT";
     public static final String PATH_SEPARATOR = System.getProperty("hono.telemetry.pathSeparator", "/");
     public static final String TELEMETRY_SENDER_ADDRESS = "telemetry/" + TEST_TENANT_ID;
     public static final String TELEMETRY_RECEIVER_ADDRESS = "telemetry" + PATH_SEPARATOR + TEST_TENANT_ID;

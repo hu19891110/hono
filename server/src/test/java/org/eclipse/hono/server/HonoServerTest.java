@@ -84,7 +84,7 @@ public class HonoServerTest {
         final Target target = getTarget(targetAddress);
         final ProtonReceiver receiver = mock(ProtonReceiver.class);
         when(receiver.getRemoteTarget()).thenReturn(target);
-        server.handleReceiverOpen(newAuthenticatedConnection("SUBJECT"), receiver);
+        server.handleReceiverOpen(newAuthenticatedConnection(Constants.DEFAULT_SUBJECT), receiver);
 
         // THEN the server delegates link establishment to the telemetry endpoint 
         assertTrue(linkEstablished.await(1, TimeUnit.SECONDS));
@@ -93,6 +93,7 @@ public class HonoServerTest {
     @Test
     public void testHandleReceiverOpenRejectsUnauthorizedClient() throws InterruptedException {
 
+        final String UNAUTHORIZED_SUBJECT = "unauthorized";
         // GIVEN a server with a telemetry endpoint
         final String restrictedTargetAddress = TelemetryConstants.NODE_ADDRESS_TELEMETRY_PREFIX + "RESTRICTED_TENANT";
         final EventBus eventBus = mock(EventBus.class);
@@ -103,7 +104,7 @@ public class HonoServerTest {
         when(telemetryEndpoint.getName()).thenReturn(TelemetryConstants.TELEMETRY_ENDPOINT);
         HonoServer server = createServer(telemetryEndpoint);
         server.init(vertx, mock(Context.class));
-        final JsonObject authMsg = AuthorizationConstants.getAuthorizationMsg(Constants.DEFAULT_SUBJECT, restrictedTargetAddress, Permission.WRITE.toString());
+        final JsonObject authMsg = AuthorizationConstants.getAuthorizationMsg(UNAUTHORIZED_SUBJECT, restrictedTargetAddress, Permission.WRITE.toString());
         TestSupport.expectReplyForMessage(eventBus, server.getAuthServiceAddress(), authMsg, AuthorizationConstants.DENIED);
 
         // WHEN a client connects to the server using a telemetry address for a tenant it is not authorized to write to
@@ -116,7 +117,7 @@ public class HonoServerTest {
             linkClosed.countDown();
             return receiver;
         });
-        server.handleReceiverOpen(newAuthenticatedConnection("SUBJECT"), receiver);
+        server.handleReceiverOpen(newAuthenticatedConnection(UNAUTHORIZED_SUBJECT), receiver);
 
         // THEN the server closes the link with the client
         assertTrue(linkClosed.await(1, TimeUnit.SECONDS));

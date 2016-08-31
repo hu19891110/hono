@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.eclipse.hono.authentication.AuthenticationService;
 import org.eclipse.hono.authorization.AuthorizationService;
 import org.eclipse.hono.registration.impl.BaseRegistrationAdapter;
 import org.eclipse.hono.server.HonoServer;
@@ -28,7 +29,6 @@ import org.eclipse.hono.util.EndpointFactory;
 import org.eclipse.hono.util.VerticleFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -70,6 +70,8 @@ public class Application {
     @Autowired
     private BaseRegistrationAdapter registration;
     @Autowired
+    private VerticleFactory<AuthenticationService> authenticationServiceFactory;
+    @Autowired
     private VerticleFactory<AuthorizationService> authServiceFactory;
     @Autowired
     private VerticleFactory<HonoServer> serverFactory;
@@ -102,8 +104,10 @@ public class Application {
             }
         });
 
-        CompositeFuture.all(deployVerticle(adapterFactory, instanceCount),
+        CompositeFuture.all(
+                deployVerticle(adapterFactory, instanceCount),
                 deployVerticle(authServiceFactory, instanceCount),
+                deployVerticle(authenticationServiceFactory, instanceCount),
                 deployRegistrationService()).setHandler(ar -> {
             if (ar.succeeded()) {
                 deployServer(instanceCount, started);
@@ -226,8 +230,9 @@ public class Application {
     }
 
     public static void main(final String[] args) {
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
+        // we do not seem to need this
+//        SLF4JBridgeHandler.removeHandlersForRootLogger();
+//        SLF4JBridgeHandler.install();
         SpringApplication.run(Application.class, args);
     }
 }
